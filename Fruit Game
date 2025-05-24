@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Fruit Slice Game</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #222; overflow: hidden; color: white; font-family: sans-serif; }
+    #gameCanvas { background: #333; display: block; margin: 0 auto; border: 2px solid white; }
+    #score { position: absolute; top: 10px; left: 10px; font-size: 24px; }
+    #gameOver { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                color: red; font-size: 36px; display: none; }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="600" height="800"></canvas>
+  <div id="score">Score: 0</div>
+  <div id="gameOver">Game Over! Reload to play again.</div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreDisplay = document.getElementById('score');
+    const gameOverDisplay = document.getElementById('gameOver');
+
+    let fruits = [];
+    let score = 0;
+    let isGameOver = false;
+
+    const fruitImages = ['🍎', '🍌', '🍉', '🍇', '🍓'];
+
+    function random(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+
+    class Fruit {
+      constructor() {
+        this.x = random(100, 500);
+        this.y = 800;
+        this.size = 40;
+        this.speedY = random(-15, -25);
+        this.speedX = random(-2, 2);
+        this.gravity = 0.7;
+        this.emoji = fruitImages[Math.floor(Math.random() * fruitImages.length)];
+        this.sliced = false;
+      }
+
+      update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        this.speedY += this.gravity;
+      }
+
+      draw() {
+        ctx.font = `${this.size}px Arial`;
+        ctx.fillText(this.emoji, this.x, this.y);
+      }
+    }
+
+    function spawnFruit() {
+      if (!isGameOver) {
+        fruits.push(new Fruit());
+      }
+    }
+
+    function update() {
+      if (isGameOver) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      fruits.forEach((fruit, index) => {
+        fruit.update();
+        fruit.draw();
+        if (fruit.y > 800 && !fruit.sliced) {
+          endGame();
+        }
+      });
+      fruits = fruits.filter(fruit => !fruit.sliced && fruit.y < 800);
+      requestAnimationFrame(update);
+    }
+
+    function sliceAt(x, y) {
+      fruits.forEach(fruit => {
+        const dx = fruit.x - x;
+        const dy = fruit.y - y;
+        if (Math.sqrt(dx * dx + dy * dy) < fruit.size) {
+          fruit.sliced = true;
+          score++;
+          scoreDisplay.textContent = `Score: ${score}`;
+        }
+      });
+    }
+
+    function endGame() {
+      isGameOver = true;
+      gameOverDisplay.style.display = 'block';
+    }
+
+    canvas.addEventListener('mousemove', (e) => {
+      if (isGameOver) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      sliceAt(x, y);
+    });
+
+    setInterval(spawnFruit, 1000);
+    update();
+  </script>
+</body>
+</html>
